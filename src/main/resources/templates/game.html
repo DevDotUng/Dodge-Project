@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <title>Gamedev Canvas Workshop - lesson 1: create the Canvas and draw on it</title>
+    <style>* { padding: 0; margin: 0; } canvas { background: #eee; display: block; margin: 0 auto; }</style>
+</head>
+<body>
+<br>
+<button id="play" onclick="play()">플레이</button>
+<canvas id="myCanvas" width="600" height="600"></canvas>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.5/sockjs.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script type="text/javascript">
+
+    var isPlay = false;
+    var canvas = document.getElementById("myCanvas");
+    var ctx = canvas.getContext("2d");
+
+    let isFinish = false;
+
+    let numberOfBalls = 3;
+    let count = 0;
+    var xArr = [];
+    var yArr = [];
+    var dxArr = [];
+    var dyArr = [];
+    for (var i = 0; i < numberOfBalls; i++) {
+        xArr.push(canvas.width * Math.random());
+        yArr.push(canvas.height * Math.random());
+        dxArr.push(Math.random() + 1);
+        dyArr.push(Math.random() + 1);
+    }
+    const ballRadius = 3;
+
+    let sock;
+
+    connectSocket();
+
+    function connectSocket() {
+        sock = new SockJS("/game");
+        sock.onopen = function () {
+            alert('연결에 성공하였습니다.');
+            const currentUrl = window.location.href;
+            var message = JSON.stringify({type:currentUrl.split('/')[6], title:currentUrl.split('/')[5]});
+            sock.send(message);
+            if (currentUrl.split('/')[6] == "enter") {
+                $("#play").hide();
+            }
+
+            sock.onmessage = (data => {
+                const message = JSON.parse(data.data);
+                if (message.type == "play") {
+                    console.log(message);
+                    console.log(isPlay);
+                    xArr = message.xArr;
+                    yArr = message.yArr;
+                    dxArr = message.dxArr;
+                    dyArr = message.dyArr;
+                    play();
+                } else if (message.type == "finish") {
+                    if (!isFinish) {
+                        finish();
+                    }
+                }
+            });
+        }
+        sock.onerror = function (e) {
+            alert('연결에 실패하였습니다.');
+        }
+        sock.onclose = function () {
+            alert('연결을 종료합니다.');
+        };
+    }
+
+    function sendMessage() {
+        // sock.send($("#message").val());
+        // $('#message').val("");
+        // location.href='/index/game';
+    }
+
+    $("#message").keyup(e => {
+        if (e.keyCode == 13) {
+            sendMessage();
+        }
+    });
+
+    $("#sendBtn").click(() => {
+        sendMessage();
+    });
+
+    var paddleHeight = 9;
+    var paddleWidth = 9;
+    var paddleX = (canvas.width - paddleWidth * 2) / 2;
+    var paddleY = (canvas.height - paddleHeight * 2) / 2;
+    var rightPressed = false;
+    var leftPressed = false;
+    var upPressed = false;
+    var downPressed = false;
+    var movingSpeed = 3;
+
+    function drawBall() {
+        for (var i = 0; i < numberOfBalls; i++) {
+            ctx.beginPath();
+            ctx.arc(xArr[i], yArr[i], ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = "#0095DD";
+            ctx.fill();
+            ctx.closePath();
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBall();
+        drawPaddle();
+        drawScore();
+
+        for (var i = 0; i < numberOfBalls; i++) {
+            if (xArr[i] + dxArr[i] > canvas.width || xArr[i] + dxArr[i] < 0) {
+                dxArr[i] = -dxArr[i];
+            }
+
+            if (yArr[i] + dyArr[i] > canvas.height - ballRadius || yArr[i] + dyArr[i] < ballRadius) {
+                dyArr[i] = -dyArr[i];
+            } else if (xArr[i] > paddleX && xArr[i] < paddleX + paddleWidth && yArr[i]> paddleY && yArr[i] < paddleY + paddleHeight) {
+                finish();
+            }
+
+            xArr[i] += dxArr[i];
+            yArr[i] += dyArr[i];
+        }
+
+        if (rightPressed && paddleX < canvas.width - paddleWidth && upPressed && paddleY > 0) {
+            paddleX += movingSpeed;
+            paddleY -= movingSpeed;
+        } else if (leftPressed && paddleX > 0 && upPressed && paddleY > 0) {
+            paddleX -= movingSpeed;
+            paddleY -= movingSpeed;
+        } else if (rightPressed && paddleX < canvas.width - paddleWidth && downPressed && paddleY < canvas.height - paddleHeight) {
+            paddleY += movingSpeed;
+        } else if (leftPressed && paddleX > 0 && downPressed && paddleY < canvas.height - paddleHeight) {
+            paddleX -= movingSpeed;
+            paddleY += movingSpeed;
+        } else if (rightPressed && paddleX < canvas.width - paddleWidth) {
+            paddleX += movingSpeed;
+        } else if (leftPressed && paddleX > 0) {
+            paddleX -= movingSpeed;
+        } else if (upPressed && paddleY > 0) {
+            paddleY -= movingSpeed;
+        } else if (downPressed && paddleY < canvas.height - paddleHeight) {
+            paddleY += movingSpeed;
+        }
+
+        count++;
+        if (count % 100 == 0) {
+            addBall();
+        }
+    }
+
+    function drawPaddle() {
+        ctx.beginPath();
+        ctx.rect(paddleX, paddleY, paddleWidth, paddleHeight);
+        ctx.fillStyle = "#FF0000";
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    function keyDownHandler(e) {
+        if (e.keyCode == 39) {
+            rightPressed = true;
+        } else if (e.keyCode == 37) {
+            leftPressed = true;
+        } else if (e.keyCode == 38) {
+            upPressed = true;
+        } else if (e.keyCode == 40) {
+            downPressed = true;
+        }
+    }
+
+    function keyUpHandler(e) {
+        if (e.keyCode == 39) {
+            rightPressed = false;
+        } else if (e.keyCode == 37) {
+            leftPressed = false;
+        } else if (e.keyCode == 38) {
+            upPressed = false;
+        } else if (e.keyCode == 40) {
+            downPressed = false;
+        }
+    }
+
+    function drawScore() {
+        ctx.font = "30px Comic Sans MS";
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        ctx.fillText(numberOfBalls, 30, canvas.height - 20);
+
+        ctx.font = "30px Comic Sans MS";
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        ctx.fillText(parseInt((count / 100) / 60), canvas.width - 200, canvas.height - 20);
+
+        ctx.font = "30px Comic Sans MS";
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        ctx.fillText("분", canvas.width - 150, canvas.height - 20);
+
+        ctx.font = "30px Comic Sans MS";
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        ctx.fillText(parseInt((count / 100) % 60), canvas.width - 100, canvas.height - 20);
+
+        ctx.font = "30px Comic Sans MS";
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        ctx.fillText("초", canvas.width - 50, canvas.height - 20);
+    }
+
+    function addBall() {
+        numberOfBalls++;
+        xArr.push(canvas.width * Math.random());
+        yArr.push(canvas.height * Math.random());
+        dxArr.push(Math.random() + 1);
+        dyArr.push(Math.random() + 1);
+        ctx.beginPath();
+        ctx.arc(xArr[numberOfBalls], yArr[numberOfBalls], ballRadius, 0, Math.PI * 2);
+        ctx.fillStyle = "#0095DD";
+        ctx.fill();
+        ctx.closePath();
+
+        drawScore();
+    }
+
+    document.addEventListener("keydown", keyDownHandler, false);
+    document.addEventListener("keyup", keyUpHandler, false);
+    function play() {
+        const currentUrl = window.location.href;
+        if (currentUrl.split('/')[6] == "update" && !isPlay) {
+            var message = JSON.stringify({type:"play", xArr:xArr, yArr:yArr, dxArr:dxArr, dyArr:dyArr});
+            sock.send(message);
+            $('#play').hide();
+        }
+        setInterval(draw, 10);
+        isPlay = true;
+    }
+
+    function finish() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        $("#myCanvas").hide();
+
+        var message = JSON.stringify({type:"finish", title:"title"});
+        sock.send(message);
+        $('#play').hide();
+        if (!isFinish) {
+            alert("GAME OVER");
+        }
+        isFinish = true;
+    }
+</script>
+
+</body>
+</html>

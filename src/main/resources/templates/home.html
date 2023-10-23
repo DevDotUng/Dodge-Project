@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>채팅</title>
+</head>
+<body>
+<button type="button" onclick="location.href='/index/game';">솔로 플레이</button>
+<h1>채팅방</h1>
+
+<div id="chat">
+    <input id="message">
+    <button id="sendBtn">전송</button>
+    <div id="roomBox"></div>
+</div>
+
+<script th:inline="javascript">
+    var rooms = [[${rooms}]]
+</script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.5/sockjs.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script type="text/javascript">
+
+    let sock;
+
+    connectSocket();
+    function connectSocket() {
+        sock = new SockJS("/home");
+        sock.onopen = function () {
+            for (i = 0; i < rooms.length; i++) {
+                $("<p id='" + rooms[i].title + "'>" + rooms[i].title +
+                    "<button type=" + "button" + " onClick=" + "location.href='/index/game/" + rooms[i].title + "/enter" + "';" + ">입장하기</button>" + "</p>").prependTo('#roomBox');
+            }
+            alert('연결에 성공하였습니다.');
+            sock.onmessage = (data => {
+                const message = JSON.parse(data.data);
+                if (message.type == "insert") {
+                    $("<p id='" + message.title + "'>" + message.title +
+                        "<button type=" + "button" + " onClick=" + "location.href='/index/game/" + message.title + "/enter" + "';" + ">입장하기</button>" + "</p>").prependTo('#roomBox');
+                } else if (message.type == "delete") {
+                    $('#' + message.title).remove();
+                }
+            });
+        }
+        sock.onerror = function (e) {
+            alert('연결에 실패하였습니다.');
+        }
+        sock.onclose = function () {
+            alert('연결을 종료합니다.');
+        };
+    }
+
+    function sendMessage() {
+        sock.send($("#message").val());
+        location.href='/index/game/' + $("#message").val() + '/update';
+        $('#message').val("");
+    }
+
+    $("#message").keyup(e => {
+        if (e.keyCode == 13) {
+            sendMessage();
+        }
+    });
+
+    $("#sendBtn").click(() => {
+        sendMessage();
+    });
+</script>
+</body>
+</html>
