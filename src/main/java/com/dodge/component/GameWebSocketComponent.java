@@ -54,7 +54,10 @@ public class GameWebSocketComponent extends TextWebSocketHandler {
         } else if (messageData.getType().equals("finish")) {
             sessionMap.forEach((sessionId, sessionInMap) -> {
                 try {
-                    sessionInMap.sendMessage(message);
+                    String guestId = dodgeService.getGuestId(session.getId());
+                    if (guestId.equals(sessionId)) {
+                        sessionInMap.sendMessage(message);
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -62,7 +65,10 @@ public class GameWebSocketComponent extends TextWebSocketHandler {
         } else if (socketMessage.charAt(9) == 'p') {
             sessionMap.forEach((sessionId, sessionInMap) -> {
                 try {
-                    sessionInMap.sendMessage(message);
+                    String guestId = dodgeService.getGuestId(session.getId());
+                    if (guestId.equals(sessionId)) {
+                        sessionInMap.sendMessage(message);
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

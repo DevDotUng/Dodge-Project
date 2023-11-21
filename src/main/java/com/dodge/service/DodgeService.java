@@ -13,4 +13,5 @@ public interface DodgeService {
     void updateHostId(String title, String host);
     void updateGuestId(String title, String guest);
     String deleteRoom(String host);
+    String getGuestId(String host);
 }

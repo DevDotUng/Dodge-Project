@@ -55,4 +55,9 @@ public class DodgeServiceImp implements DodgeService {
 
         return title;
     }
+
+    @Override
+    public String getGuestId(String host) {
+        return dodgeDAO.getGuestId(host);
+    }
 }

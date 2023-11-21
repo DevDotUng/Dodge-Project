@@ -16,4 +16,5 @@ public interface DodgeDAO {
     void updateGuestId(String title, String guest);
     String getTitle(String host);
     void deleteRoom(String host);
+    String getGuestId(String host);
 }

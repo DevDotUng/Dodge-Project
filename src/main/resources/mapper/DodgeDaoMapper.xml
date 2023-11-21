@@ -45,4 +45,10 @@
     DELETE FROM rooms
     WHERE host = #{host}
   </delete>
+  <select id="getGuestId" parameterType="String" resultType="String">
+    SELECT guest
+    FROM rooms
+    WHERE host = #{host}
+      LIMIT 1
+  </select>
 </mapper>
