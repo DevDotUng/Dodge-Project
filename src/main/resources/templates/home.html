@@ -3,10 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <title>채팅</title>
+    <style>
+        .room {
+            width: 200px;
+            height: 50px;
+            border: 1px solid black;
+            border-radius: 10px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        p {
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
 <button type="button" onclick="location.href='/index/game';">솔로 플레이</button>
-<h1>채팅방</h1>
+<h1>게임 방</h1>
 
 <div id="chat">
     <input id="message">
@@ -29,15 +42,15 @@
         sock = new SockJS("/home");
         sock.onopen = function () {
             for (i = 0; i < rooms.length; i++) {
-                $("<p id='" + rooms[i].title + "'>" + rooms[i].title +
-                    "<button type=" + "button" + " onClick=" + "location.href='/index/game/" + rooms[i].title + "/enter" + "';" + ">입장하기</button>" + "</p>").prependTo('#roomBox');
+                $("<div class='room'><p id='" + rooms[i].title + "'>" + rooms[i].title +
+                    "<button type=" + "button" + " onClick=" + "location.href='/index/game/" + rooms[i].title + "/enter" + "';" + ">입장하기</button>" + "</p></div>").prependTo('#roomBox');
             }
             alert('연결에 성공하였습니다.');
             sock.onmessage = (data => {
                 const message = JSON.parse(data.data);
                 if (message.type == "insert") {
-                    $("<p id='" + message.title + "'>" + message.title +
-                        "<button type=" + "button" + " onClick=" + "location.href='/index/game/" + message.title + "/enter" + "';" + ">입장하기</button>" + "</p>").prependTo('#roomBox');
+                    $("<div class='room'><p id='" + message.title + "'>" + message.title +
+                        "<button type=" + "button" + " onClick=" + "location.href='/index/game/" + message.title + "/enter" + "';" + ">입장하기</button>" + "</p></div>").prependTo('#roomBox');
                 } else if (message.type == "delete") {
                     $('#' + message.title).remove();
                 }
